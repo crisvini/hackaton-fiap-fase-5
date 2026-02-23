@@ -345,6 +345,26 @@ def _normalize_architecture_payload(data: dict[str, Any]) -> dict[str, Any]:
 
     if "trust_boundaries" not in normalized or normalized.get("trust_boundaries") is None:
         normalized["trust_boundaries"] = []
+    else:
+        normalized_tbs: list[dict[str, Any]] = []
+        for idx, raw_tb in enumerate(normalized.get("trust_boundaries") or [], 1):
+            if not isinstance(raw_tb, dict):
+                continue
+            tb = dict(raw_tb)
+            if "id" not in tb or not tb.get("id"):
+                tb["id"] = f"TB{idx}"
+            if "name" not in tb or not tb.get("name"):
+                fallback_name = tb.get("label") or tb.get("boundary") or tb.get("id")
+                tb["name"] = str(fallback_name or f"Trust Boundary {idx}")
+            if "component_ids" not in tb or tb.get("component_ids") is None:
+                if isinstance(tb.get("components"), list):
+                    tb["component_ids"] = tb.get("components")
+                elif isinstance(tb.get("component_names"), list):
+                    tb["component_ids"] = tb.get("component_names")
+                else:
+                    tb["component_ids"] = []
+            normalized_tbs.append(tb)
+        normalized["trust_boundaries"] = normalized_tbs
 
     if "assumptions" not in normalized or normalized.get("assumptions") is None:
         normalized["assumptions"] = []
