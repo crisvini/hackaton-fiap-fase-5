@@ -36,7 +36,7 @@ class ThreatModelPipeline:
         if not self._llm:
             raise RuntimeError(
                 "OPENAI_API_KEY e obrigatoria para extrair arquitetura a partir de imagem."
-            )
+        )
 
         raw = self._llm.complete_json(
             model=self.settings.openai_model_vision,
@@ -46,6 +46,13 @@ class ThreatModelPipeline:
             temperature=0.0,
         )
         return _validate_architecture(raw)
+
+    def validate_openai_api_key(self) -> None:
+        if not self._llm:
+            raise RuntimeError(
+                "OPENAI_API_KEY nao configurada. Defina no ambiente ou em .env."
+            )
+        self._llm.validate_api_key()
 
     def load_architecture_json(self, path: Path) -> ArchitectureAnalysis:
         data = json.loads(path.read_text(encoding="utf-8"))

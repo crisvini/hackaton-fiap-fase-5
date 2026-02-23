@@ -52,9 +52,22 @@ def analyze(
     if threats_model:
         settings.openai_model_threats = threats_model
 
+    if image and not settings.openai_api_key:
+        typer.secho(
+            "Erro: OPENAI_API_KEY nao configurada. Crie o arquivo .env com as variaveis do .env.example e informe uma chave valida da OpenAI.",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(code=1)
+
     pipeline = ThreatModelPipeline(settings)
 
     if image:
+        try:
+            pipeline.validate_openai_api_key()
+        except Exception as exc:
+            typer.secho(f"Erro: {exc}", fg=typer.colors.RED, err=True)
+            raise typer.Exit(code=1)
         result = pipeline.analyze_image(
             image_path=image,
             output_dir=output_dir,
@@ -91,4 +104,3 @@ def serve(
 
 if __name__ == "__main__":
     app()
-

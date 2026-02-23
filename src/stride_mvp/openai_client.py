@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from openai import OpenAI
+from openai import AuthenticationError, OpenAI
 
 from .config import Settings
 from .image_utils import to_data_url
@@ -21,6 +21,20 @@ class OpenAIJsonClient:
         if settings.openai_base_url:
             kwargs["base_url"] = settings.openai_base_url
         self._client = OpenAI(**kwargs)
+
+    def validate_api_key(self) -> None:
+        """Valida rapidamente a chave da OpenAI antes do processamento pesado."""
+        try:
+            # Requisicao leve para confirmar autenticacao.
+            self._client.models.list()
+        except AuthenticationError as exc:  # pragma: no cover - network/runtime behavior
+            raise LLMClientError(
+                "OPENAI_API_KEY invalida ou sem permissao. Verifique a chave cadastrada no arquivo .env."
+            ) from exc
+        except Exception as exc:  # pragma: no cover - network/runtime behavior
+            raise LLMClientError(
+                f"Nao foi possivel validar a OPENAI_API_KEY neste momento: {exc}"
+            ) from exc
 
     def complete_json(
         self,
@@ -53,6 +67,10 @@ class OpenAIJsonClient:
                 temperature=temperature,
                 response_format={"type": "json_object"},
             )
+        except AuthenticationError as exc:  # pragma: no cover - network/runtime behavior
+            raise LLMClientError(
+                "OPENAI_API_KEY invalida ou sem permissao. Verifique a chave cadastrada no arquivo .env."
+            ) from exc
         except Exception as exc:  # pragma: no cover - network/runtime behavior
             raise LLMClientError(f"Falha na chamada OpenAI: {exc}") from exc
 
@@ -96,4 +114,3 @@ def _strip_code_fences(text: str) -> str:
             lines = lines[:-1]
         return "\n".join(lines).strip()
     return stripped
-

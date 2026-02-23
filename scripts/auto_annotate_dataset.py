@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 from stride_mvp.config import Settings
@@ -36,7 +37,18 @@ def main() -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     settings = Settings.from_env()
+    if not settings.openai_api_key:
+        print(
+            "Erro: OPENAI_API_KEY nao configurada. Crie o arquivo .env com as variaveis do .env.example e informe uma chave valida da OpenAI.",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
     pipeline = ThreatModelPipeline(settings)
+    try:
+        pipeline.validate_openai_api_key()
+    except Exception as exc:
+        print(f"Erro: {exc}", file=sys.stderr)
+        raise SystemExit(1)
 
     images = sorted(
         p for p in input_dir.rglob("*") if p.is_file() and p.suffix.lower() in SUPPORTED_EXTS
@@ -76,4 +88,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
