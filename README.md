@@ -1,5 +1,11 @@
 # Hackathon FIAP Fase 5 - MVP de Modelagem de Ameacas com IA (Python + OpenAI)
 
+Alunos participantes:
+- Cristian Vinícius Leoncini Lopes - RM 362011
+- Júlia de Andrade Bertazzi - RM 361574
+- Luiz Henrique Beluci Terra - RM 363804
+- Paulo Cesar do Nascimento Silva - RM 361778
+
 ## Visao do projeto (para avaliacao)
 
 Este repositorio implementa um MVP para o desafio de "Modelagem de ameacas utilizando IA", com foco em validar a viabilidade da feature proposta no PDF do hackathon.
