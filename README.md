@@ -1,0 +1,158 @@
+# MVP - Modelagem de Ameacas STRIDE com Python + OpenAI (Hackathon FIAP Fase 5)
+
+Este projeto implementa um MVP em Python para o desafio do PDF (`IADT - Fase 5 - Hackaton.pdf`):
+
+- Ler um diagrama de arquitetura em imagem
+- Identificar componentes e fluxos
+- Gerar um relatorio de modelagem de ameacas baseado em STRIDE
+- Sugerir vulnerabilidades relacionadas e contramedidas
+
+A estrategia usada aqui e pragmatica para hackathon:
+
+- `LLM + visao` (OpenAI) para interpretar o diagrama rapidamente
+- `catalogo local STRIDE` para reforcar consistencia e fallback
+- Saida em `JSON + Markdown` para facilitar demo, video e documentacao
+
+## O que esta coberto dos objetivos do PDF
+
+1. `Interpretar automaticamente diagrama de arquitetura`: sim (OpenAI Vision)
+2. `Gerar relatorio de modelagem STRIDE`: sim (LLM + schema estruturado)
+3. `Dataset de imagens`: suportado por fluxo de anotacao automatica (script)
+4. `Anotar dataset`: sim (script `scripts/auto_annotate_dataset.py`, com bbox aproximada quando o modelo consegue inferir)
+5. `Treinar modelo supervisionado`: nao implementado neste MVP (recomendado como fase 2)
+6. `Buscar vulnerabilidades e contramedidas por componente`: sim (catalogo local + LLM)
+
+## Arquitetura da solucao
+
+1. Entrada: imagem (`.png`, `.jpg`, `.jpeg`, `.webp`)
+2. Extracao de arquitetura com OpenAI Vision:
+   - componentes
+   - fluxos de dados
+   - trust boundaries
+   - ambiguidades/hipoteses
+3. Geração de ameacas STRIDE:
+   - usa arquitetura extraida
+   - consulta catalogo local `kb/stride_component_catalog.yaml`
+   - gera ameacas priorizadas com mitigacoes e monitoracao
+4. Saida:
+   - `architecture.json`
+   - `threat_report.json`
+   - `threat_report.md`
+
+## Estrutura
+
+- `src/stride_mvp/cli.py`: CLI principal
+- `src/stride_mvp/api.py`: API FastAPI (demo opcional)
+- `src/stride_mvp/pipeline.py`: pipeline principal
+- `src/stride_mvp/openai_client.py`: integracao OpenAI
+- `src/stride_mvp/schemas.py`: schemas Pydantic
+- `kb/stride_component_catalog.yaml`: catalogo de ameacas/mitigacoes
+- `scripts/auto_annotate_dataset.py`: auto-anotacao de dataset
+
+## Requisitos
+
+- Python 3.10+
+- Chave da OpenAI (`OPENAI_API_KEY`)
+
+## Instalacao
+
+```bash
+python -m venv .venv
+.venv\\Scripts\\activate
+pip install -e .
+```
+
+Crie um arquivo `.env` (ou exporte variaveis no shell):
+
+```env
+OPENAI_API_KEY=sk-...
+OPENAI_MODEL_VISION=gpt-4.1-mini
+OPENAI_MODEL_THREATS=gpt-4.1-mini
+```
+
+## Uso via CLI
+
+### 1) Analisar um diagrama (imagem -> STRIDE)
+
+```bash
+stride-mvp analyze --image caminho\\para\\diagrama.png --output-dir outputs\\arquitetura_1
+```
+
+Saida esperada (resumo no terminal + arquivos):
+
+- `outputs/arquitetura_1/architecture.json`
+- `outputs/arquitetura_1/threat_report.json`
+- `outputs/arquitetura_1/threat_report.md`
+
+### 2) Gerar ameaças a partir de arquitetura já extraida (sem nova chamada de visao)
+
+```bash
+stride-mvp analyze --architecture-json outputs\\arquitetura_1\\architecture.json --output-dir outputs\\reprocessado
+```
+
+### 3) Fallback sem LLM para etapa de ameaças (usa catalogo local)
+
+```bash
+stride-mvp analyze --image caminho\\para\\diagrama.png --skip-threat-llm
+```
+
+## Uso via API (FastAPI)
+
+```bash
+stride-mvp serve --host 127.0.0.1 --port 8000
+```
+
+Endpoint:
+
+- `GET /health`
+- `POST /analyze` (multipart file upload)
+
+Exemplo `curl` (PowerShell pode usar `Invoke-RestMethod`):
+
+```bash
+curl -X POST "http://127.0.0.1:8000/analyze" -F "file=@diagrama.png"
+```
+
+## Auto-anotacao de dataset (objetivo de modelo supervisionado)
+
+Script para acelerar anotacao do dataset de diagramas:
+
+```bash
+python scripts/auto_annotate_dataset.py --input-dir dataset\\images --output-dir outputs\\dataset_annotations
+```
+
+Observacoes:
+
+- O modelo pode inferir `bbox` aproximada para alguns componentes, mas isso deve ser revisado manualmente.
+- O fluxo e util para criar um dataset inicial para treinar detector supervisionado (ex.: YOLO/Detectron).
+
+## Como apresentar no hackathon (sugestao)
+
+1. Mostre o diagrama de entrada
+2. Rode o CLI
+3. Abra `threat_report.md`
+4. Destaque:
+   - componentes/fluxos identificados
+   - ameaças por STRIDE
+   - contramedidas priorizadas
+5. Explique roadmap:
+   - fase 2 com anotacao humana
+   - treino supervisionado de detector de componentes
+   - comparacao entre LLM-only vs detector+LLM
+
+## Roadmap recomendado (fase 2)
+
+- Coletar/curar dataset de diagramas
+- Revisar anotacoes (bbox + classe)
+- Treinar detector supervisionado de componentes
+- Usar detector para estruturar o diagrama
+- Manter LLM para:
+  - interpretacao semantica de fluxos
+  - STRIDE
+  - recomendacoes de mitigacao
+
+## Observacoes importantes
+
+- A extracao de diagramas com LLM e excelente para MVP, mas exige validacao humana em cenarios complexos.
+- As severidades e mitigacoes devem ser revisadas por AppSec antes de uso em producao.
+

@@ -1,0 +1,256 @@
+global_notes:
+  - Validar fronteiras de confianca e fluxos expostos a Internet.
+  - Priorizar autenticacao forte, autorizacao por menor privilegio e criptografia em transito.
+  - Incluir logs auditaveis, monitoracao e alertas para eventos sensiveis.
+
+components:
+  user:
+    description: Usuario final ou operador interagindo com o sistema.
+    common_risks:
+      - Credential stuffing e reutilizacao de senha.
+      - Engenharia social e roubo de sessao.
+    stride:
+      spoofing:
+        vulnerabilities:
+          - Autenticacao sem MFA.
+          - Tokens de sessao previsiveis.
+        mitigations:
+          - MFA para contas privilegiadas e usuarias sensiveis.
+          - Gestao segura de sessao (cookies HttpOnly/Secure/SameSite).
+      repudiation:
+        vulnerabilities:
+          - Falta de trilha de auditoria para acoes criticas.
+        mitigations:
+          - Logs de auditoria assinados/imuteis e correlacionados por usuario.
+
+  web_app:
+    description: Interface web, portal ou frontend server-side/client-side.
+    common_risks:
+      - XSS, CSRF, manipulacao de sessao, vazamento de tokens.
+    stride:
+      tampering:
+        vulnerabilities:
+          - Falta de validacao de entrada/saida e protecoes contra CSRF.
+        mitigations:
+          - Sanitizacao/encoding contextual e tokens anti-CSRF.
+      information_disclosure:
+        vulnerabilities:
+          - Exposicao de segredos em JavaScript, erros verbosos.
+        mitigations:
+          - Nao expor segredos no cliente e padronizar mensagens de erro.
+
+  mobile_app:
+    description: Aplicativo mobile consumindo APIs.
+    common_risks:
+      - Armazenamento inseguro de tokens e ausencia de pinning.
+    stride:
+      information_disclosure:
+        vulnerabilities:
+          - Tokens em armazenamento local sem protecao.
+        mitigations:
+          - Keystore/Keychain e expiracao curta de tokens.
+      tampering:
+        vulnerabilities:
+          - Falta de validacao de integridade do app.
+        mitigations:
+          - Assinatura, verificacoes de integridade e device attestation quando aplicavel.
+
+  gateway:
+    description: API gateway/reverse proxy.
+    common_risks:
+      - Roteamento inseguro, falta de rate limiting, bypass de autenticacao.
+    stride:
+      denial_of_service:
+        vulnerabilities:
+          - Sem rate limit/circuit breaker.
+        mitigations:
+          - Rate limit por IP/token, WAF e circuit breaker.
+      spoofing:
+        vulnerabilities:
+          - Confiar em headers de identidade nao validados.
+        mitigations:
+          - Validar JWT/headers em origem confiavel e mTLS interno.
+
+  load_balancer:
+    description: Balanceador de carga/ingress.
+    common_risks:
+      - Configuracao TLS fraca e superficie ampla de exposicao.
+    stride:
+      denial_of_service:
+        vulnerabilities:
+          - Falta de protecao contra floods.
+        mitigations:
+          - Shielding/WAF/CDN, autoscaling e regras de rate limit.
+      information_disclosure:
+        vulnerabilities:
+          - TLS desatualizado/cifras fracas.
+        mitigations:
+          - TLS moderno e renovacao automatica de certificados.
+
+  api:
+    description: Backend/API/microservico.
+    common_risks:
+      - Broken access control, injecao, validacao fraca, SSRF.
+    stride:
+      spoofing:
+        vulnerabilities:
+          - Validacao inadequada de tokens/chaves.
+        mitigations:
+          - Validar assinatura, issuer, audience e expiracao.
+      tampering:
+        vulnerabilities:
+          - Falta de validacao de payload e integridade.
+        mitigations:
+          - Validacao schema, assinatura/HMAC quando aplicavel.
+      repudiation:
+        vulnerabilities:
+          - Logs insuficientes de operacoes criticas.
+        mitigations:
+          - Audit trail com correlation-id e protecao contra alteracao.
+      information_disclosure:
+        vulnerabilities:
+          - Respostas com dados excessivos ou segredos.
+        mitigations:
+          - Minimizar payload, mascarar dados e segregar segredos.
+      denial_of_service:
+        vulnerabilities:
+          - Sem timeouts, rate limit, quotas.
+        mitigations:
+          - Timeouts, bulkheads, rate limit, cache, filas.
+      elevation_of_privilege:
+        vulnerabilities:
+          - Autorizacao baseada apenas no cliente.
+        mitigations:
+          - Autorizacao server-side por papel/atributo e menor privilegio.
+
+  auth_service:
+    description: Servico de autenticacao/IDP/OAuth/OIDC.
+    common_risks:
+      - Emissao indevida de tokens, configuracao OAuth insegura.
+    stride:
+      spoofing:
+        vulnerabilities:
+          - Fluxos OAuth/OIDC sem PKCE/redirects inseguros.
+        mitigations:
+          - PKCE, allowlist de redirect URIs, validacao nonce/state.
+      elevation_of_privilege:
+        vulnerabilities:
+          - Escopos excessivos e claims sem validacao.
+        mitigations:
+          - Escopos minimos e validacao forte de claims.
+
+  database:
+    description: Banco de dados relacional ou NoSQL.
+    common_risks:
+      - SQL/NoSQL injection, acesso excessivo, backup exposto.
+    stride:
+      tampering:
+        vulnerabilities:
+          - Queries dinamicas sem parametrizacao.
+        mitigations:
+          - Queries parametrizadas, ORM seguro, validacao de entrada.
+      information_disclosure:
+        vulnerabilities:
+          - Criptografia em repouso ausente e backups expostos.
+        mitigations:
+          - Criptografia em repouso, controles de acesso e backups protegidos.
+      denial_of_service:
+        vulnerabilities:
+          - Consultas pesadas sem limites e sem indices.
+        mitigations:
+          - Indices, limites de query, pool tuning e isolamento de workloads.
+      elevation_of_privilege:
+        vulnerabilities:
+          - Conta de app com privilegios administrativos.
+        mitigations:
+          - Contas por servico com privilegios minimos e rotacao de credenciais.
+
+  cache:
+    description: "Cache distribuido (ex.: Redis/Memcached)."
+    common_risks:
+      - Exposicao sem autenticacao e poisoning.
+    stride:
+      tampering:
+        vulnerabilities:
+          - Cache poisoning por chaves mal definidas.
+        mitigations:
+          - Namespaces, validacao e TTLs adequados.
+      information_disclosure:
+        vulnerabilities:
+          - Cache exposto em rede sem auth/TLS.
+        mitigations:
+          - Rede privada, auth, ACL e TLS.
+
+  queue:
+    description: Fila/mensageria/event streaming.
+    common_risks:
+      - Mensagens sem assinatura, reprocessamento indevido, DLQ ignorada.
+    stride:
+      tampering:
+        vulnerabilities:
+          - Mensagens sem integridade/autenticidade.
+        mitigations:
+          - Assinatura/HMAC, auth producer/consumer e validacao de schema.
+      denial_of_service:
+        vulnerabilities:
+          - Consumidores sem backpressure e retries agressivos.
+        mitigations:
+          - Backpressure, retry exponencial e DLQ monitorada.
+      repudiation:
+        vulnerabilities:
+          - Falta de rastreabilidade de produtor/consumidor.
+        mitigations:
+          - Correlation-id e logs de publish/consume.
+
+  worker:
+    description: Processo assicrono/batch/worker.
+    common_risks:
+      - Execucao de jobs sem isolamento, entrada nao confiavel.
+    stride:
+      elevation_of_privilege:
+        vulnerabilities:
+          - Worker com credenciais amplas em multiplos sistemas.
+        mitigations:
+          - Contas dedicadas por job e segmentacao de permissoes.
+      tampering:
+        vulnerabilities:
+          - Processamento de payload sem validacao.
+        mitigations:
+          - Validacao de schema e sanitizacao antes do processamento.
+
+  object_storage:
+    description: Armazenamento de objetos/arquivos.
+    common_risks:
+      - Buckets publicos, URLs pre-assinadas sem expiracao adequada.
+    stride:
+      information_disclosure:
+        vulnerabilities:
+          - Bucket publico ou ACLs incorretas.
+        mitigations:
+          - Buckets privados por padrao, IAM minimo, expirar URLs.
+      tampering:
+        vulnerabilities:
+          - Upload sem validacao de tipo/conteudo.
+        mitigations:
+          - Validacao MIME, antivirus e quarantine workflow.
+
+  external_service:
+    description: Dependencia externa (API terceiro, SaaS, webhook).
+    common_risks:
+      - Confianca excessiva em dados externos, indisponibilidade e supply chain.
+    stride:
+      spoofing:
+        vulnerabilities:
+          - Webhooks sem validacao de assinatura/origem.
+        mitigations:
+          - Assinatura HMAC, allowlist de IP e nonce/timestamp.
+      denial_of_service:
+        vulnerabilities:
+          - Dependencia sem timeout/fallback.
+        mitigations:
+          - Timeouts, retries com jitter, circuit breaker e fallback.
+      information_disclosure:
+        vulnerabilities:
+          - Compartilhamento excessivo de dados com terceiros.
+        mitigations:
+          - Minimizar dados enviados e revisar contratos/processamento.

@@ -1,0 +1,122 @@
+{
+  "system_name": "E-commerce API Demo",
+  "summary": "Aplicacao web com API backend, autenticacao e banco de dados.",
+  "components": [
+    {
+      "id": "C1",
+      "name": "Usuario",
+      "kind": "user",
+      "trust_zone": "internet",
+      "exposed_to_internet": true,
+      "confidence": 0.99
+    },
+    {
+      "id": "C2",
+      "name": "Frontend Web",
+      "kind": "web_app",
+      "trust_zone": "dmz",
+      "exposed_to_internet": true,
+      "confidence": 0.95
+    },
+    {
+      "id": "C3",
+      "name": "API Gateway",
+      "kind": "gateway",
+      "trust_zone": "dmz",
+      "exposed_to_internet": true,
+      "confidence": 0.93
+    },
+    {
+      "id": "C4",
+      "name": "Servico de Autenticacao",
+      "kind": "auth_service",
+      "trust_zone": "internal",
+      "exposed_to_internet": false,
+      "confidence": 0.88
+    },
+    {
+      "id": "C5",
+      "name": "API Pedidos",
+      "kind": "api",
+      "trust_zone": "internal",
+      "exposed_to_internet": false,
+      "confidence": 0.9
+    },
+    {
+      "id": "C6",
+      "name": "Banco de Dados",
+      "kind": "database",
+      "trust_zone": "data",
+      "exposed_to_internet": false,
+      "confidence": 0.92
+    }
+  ],
+  "data_flows": [
+    {
+      "id": "F1",
+      "source_id": "C1",
+      "target_id": "C2",
+      "label": "Acesso web",
+      "protocol": "HTTPS",
+      "trust_boundary_crossing": true,
+      "confidence": 0.99
+    },
+    {
+      "id": "F2",
+      "source_id": "C2",
+      "target_id": "C3",
+      "label": "Chamadas API",
+      "protocol": "HTTPS",
+      "trust_boundary_crossing": false,
+      "confidence": 0.95
+    },
+    {
+      "id": "F3",
+      "source_id": "C3",
+      "target_id": "C4",
+      "label": "Auth/OIDC",
+      "protocol": "HTTPS",
+      "trust_boundary_crossing": true,
+      "confidence": 0.9
+    },
+    {
+      "id": "F4",
+      "source_id": "C3",
+      "target_id": "C5",
+      "label": "API interna",
+      "protocol": "HTTPS",
+      "trust_boundary_crossing": true,
+      "confidence": 0.92
+    },
+    {
+      "id": "F5",
+      "source_id": "C5",
+      "target_id": "C6",
+      "label": "Leitura/escrita",
+      "protocol": "TCP",
+      "trust_boundary_crossing": true,
+      "confidence": 0.9
+    }
+  ],
+  "trust_boundaries": [
+    {
+      "id": "TB1",
+      "name": "Internet/DMZ",
+      "component_ids": ["C1", "C2", "C3"]
+    },
+    {
+      "id": "TB2",
+      "name": "Rede interna",
+      "component_ids": ["C4", "C5", "C6"]
+    }
+  ],
+  "assumptions": [
+    "Frontend e API Gateway sao componentes distintos.",
+    "Fluxos externos utilizam HTTPS."
+  ],
+  "ambiguities": [
+    "Nao esta explicito se ha WAF, rate limiting ou mTLS interno."
+  ],
+  "overall_confidence": 0.9
+}
+

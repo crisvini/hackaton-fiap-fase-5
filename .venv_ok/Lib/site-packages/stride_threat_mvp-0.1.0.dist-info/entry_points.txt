@@ -1,0 +1,3 @@
+[console_scripts]
+stride-mvp = stride_mvp.cli:app
+stride-mvp-api = stride_mvp.api:run
